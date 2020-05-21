@@ -27,10 +27,10 @@ typedef struct {
 
 shared_var *shared;
 
-void child_process(int indice) {
+void child_process(int index) {
 
 	if (shared->shutdown != 0) {
-		printf("[child] con pid = %d EXIT_SUCCESS \n", getpid());
+		printf("[child %d] con pid = %d EXIT_SUCCESS \n", index, getpid());
 		exit(EXIT_SUCCESS);
 	}
 
@@ -45,7 +45,7 @@ void child_process(int indice) {
 		shared->countdown--;
 //		printf("[child] pid = %d countdown = %d \n", getpid(),
 //				shared->countdown);
-		shared->process_counter[indice]++;
+		shared->process_counter[index]++;
 	}
 
 	if (sem_post(&shared->mutex) == -1) {
@@ -69,13 +69,14 @@ int main(void) {
 
 	CHECK_ERR_MMAP(shared, "mmap")
 
-	res = sem_init(&shared->mutex, 1, // 1 => il semaforo è condiviso tra processi, 0 => il semaforo è condiviso tra threads del processo
-			1 // valore iniziale del semaforo (se mettiamo 0 che succede?)
+	res = sem_init(&shared->mutex,
+			1, 	// 1 => il semaforo è condiviso tra processi, 0 => il semaforo è condiviso tra threads del processo
+			1 	// valore iniziale del semaforo (se mettiamo 0 che succede?)
 			);
 
 	CHECK_ERR(res, "sem_init")
 
-	// voglio creare N processi figli
+	// creaiamo N processi figli
 
 	for (int i = 0; i < N; i++) {
 		pid = fork();
@@ -83,10 +84,8 @@ int main(void) {
 
 		switch (pid) {
 		case 0: // child process
-			printf("[child] start with pid = %d\n", getpid());
-			while (shared->countdown == 0) {
-				//printf("[child] con pid = %d in ATTESA \n", getpid());
-			}
+			printf("[child %d] start with pid = %d\n", i, getpid());
+			while (shared->countdown == 0)
 			for (;;)
 				child_process(i);
 			break;
